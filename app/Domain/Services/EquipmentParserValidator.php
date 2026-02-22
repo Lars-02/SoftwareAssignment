@@ -143,9 +143,13 @@ class EquipmentParserValidator
      */
     public function validateLineLength(array $lines): void
     {
+        if (count($lines) % 3 !== 0) {
+            throw new InvalidFileException('Corrupt export: data rows are not complete 3-line records');
+        }
+
         foreach ($lines as $line) {
             if (strlen($line) !== self::EXPECTED_DATA_LINE_LENGTH) {
-                throw new InvalidFileException('Lines does not contain the expected total characters, this file will not be imported until the new files are uploaded');
+                throw new InvalidFileException('Corrupt export: line length mismatch');
             }
         }
     }
