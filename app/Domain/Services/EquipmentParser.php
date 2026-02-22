@@ -67,6 +67,8 @@ class EquipmentParser
             $equipments[] = $this->parseRecord($recordLines);
         }
 
+        $this->validator->validateMinimumRecord($equipments);
+
         return $equipments;
     }
 
@@ -81,6 +83,8 @@ class EquipmentParser
      */
     private function getRecordPerThreeLines(array $lines): array
     {
+        $this->validator->validateHeader($lines);
+
         $lines = array_values(array_filter($lines, fn (string $line): bool => !$this->validator->isHeaderOrFooter($line)));
 
         return $this->parseRecordPerThreeLines($lines);
