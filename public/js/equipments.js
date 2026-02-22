@@ -5,35 +5,9 @@
     const $prevPage = $('#prevPage');
     const $nextPage = $('#nextPage');
     const $pageNumbers = $('#pageNumbers');
+    const $searchButton = $('#searchButton');
     const $overview = $('#overview');
 
-    const fixedColumns = [
-        'id',
-        'Equipment',
-        'Material',
-        'MaterialWithoutFet',
-        'Description',
-        'IH09Description',
-        'Room',
-        'Plant',
-        'Location',
-        'Sloc',
-        'ManufactSerialNumber',
-        'SerNo',
-        'UserStatus',
-        'SystemStatus',
-        'Dimensions',
-        'CleaningCounter_limit',
-        'CleaningCounter_current',
-        'GrossWeight',
-        'current_status',
-        'workcenter',
-        'StockType',
-        'CreatedOn',
-        'CreatedBy',
-        'ChangedOn',
-        'ChangedBy',
-    ];
 
     const bodyCellClass = 'border-b px-4 py-2 text-sm text-gray-700';
     const emptyCellClass = 'px-4 py-4 text-sm text-gray-500';
@@ -58,7 +32,7 @@
             const $row = $('<tr></tr>');
             const $cell = $('<td></td>')
                 .addClass(emptyCellClass)
-                .attr('colspan', fixedColumns.length)
+                .attr('colspan', columns.length)
                 .text('No equipment found.');
             $row.append($cell);
             $tableBody.append($row);
@@ -70,7 +44,7 @@
         $.each(items, (_, rowData) => {
             const $row = $('<tr></tr>');
 
-            $.each(fixedColumns, (_, column) => {
+            $.each(columns, (_, column) => {
                 const value = rowData[column] ?? '-';
                 const $td = $('<td></td>').addClass(bodyCellClass).text(value);
                 $row.append($td);
@@ -120,6 +94,10 @@
             renderPagination(response);
         });
     }
+
+    $searchButton.on('click', () => {
+        fetchRows(1);
+    });
 
     $prevPage.on('click', () => {
         if (activePage > 1) {

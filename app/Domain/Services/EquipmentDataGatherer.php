@@ -12,8 +12,8 @@ class EquipmentDataGatherer
     ) {
     }
 
-    public function getAllWithPaginate(int $paginate): LengthAwarePaginator
+    public function getAllWithPaginate(string $search, int $paginate): LengthAwarePaginator
     {
-        return $this->equipmentRepository->getAll($paginate);
+        return $this->equipmentRepository->getAll($search, $paginate);
     }
 }

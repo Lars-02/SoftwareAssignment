@@ -26,9 +26,24 @@ class EquipmentRepository implements EquipmentRepositoryInterface
         }
     }
 
-    public function getAll(int $paginate): LengthAwarePaginator
+    public function getAll(string $search, int $paginate): LengthAwarePaginator
     {
-        return Equipment::query()
+        $query = Equipment::query();
+
+        if ($search !== '') {
+            $escaped = addcslashes($search, '\\%_');
+            $like = "%{$escaped}%";
+
+            $query->where(function ($builder) use ($like): void {
+                $builder
+                    ->where('Equipment', 'like', $like)
+                    ->orWhere('Material', 'like', $like)
+                    ->orWhere('Description', 'like', $like)
+                    ->orWhere('Room', 'like', $like);
+            });
+        }
+
+        return $query
             ->orderBy('Equipment')
             ->paginate($paginate)
             ->withQueryString();

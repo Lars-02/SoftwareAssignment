@@ -10,5 +10,5 @@ interface EquipmentRepositoryInterface
     /** @param Equipment[] $equipments */
     public function saveBatch(array $equipments): void;
 
-    public function getAll(int $paginate): LengthAwarePaginator;
+    public function getAll(string $search, int $paginate): LengthAwarePaginator;
 }

@@ -2,9 +2,9 @@
 
 namespace App\Application\Http\Controllers\Api;
 
+use App\Application\Http\Requests\EquipmentSearchRequest;
 use App\Domain\Services\EquipmentDataGatherer;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Http\Request;
 
 class EquipmentController
 {
@@ -15,9 +15,12 @@ class EquipmentController
     ) {
     }
 
-    public function index(Request $request): JsonResponse
+    public function index(EquipmentSearchRequest $request): JsonResponse
     {
-        $paginator = $this->equipmentDataGatherer->getAllWithPaginate(self::PER_PAGE);
+        $validated = $request->validated();
+
+        $search = trim((string) ($validated['search'] ?? ''));
+        $paginator = $this->equipmentDataGatherer->getAllWithPaginate($search, self::PER_PAGE);
 
         return response()->json($paginator);
     }
