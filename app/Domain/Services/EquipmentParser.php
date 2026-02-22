@@ -39,8 +39,10 @@ class EquipmentParser
         'gross_weight_block' => [79, 17],
         'wkctr_block' => [224, 9],
         'changed_by_block' => [92, 13],
-        'valid_from_raw' => [194, 10],
-        'valid_to_raw' => [205, 10],
+        'valid_from_raw_primary' => [194, 10],
+        'valid_from_raw_fallback' => [190, 10],
+        'valid_to_raw_primary' => [205, 10],
+        'valid_to_raw_fallback' => [201, 10],
     ];
 
     public function __construct(
@@ -225,14 +227,26 @@ class EquipmentParser
      */
     private function parseSecondLineData(string $line): array
     {
+        $validFromPrimary = $this->getValue($line, 'valid_from_raw_primary');
+        $validFromFallback = $this->getValue($line, 'valid_from_raw_fallback');
+        $validToPrimary = $this->getValue($line, 'valid_to_raw_primary');
+        $validToFallback = $this->getValue($line, 'valid_to_raw_fallback');
+
+        $validFromRaw = $this->parseDateForTimestamp($validFromPrimary) !== null
+            ? $validFromPrimary
+            : $validFromFallback;
+        $validToRaw = $this->parseDateForTimestamp($validToPrimary) !== null
+            ? $validToPrimary
+            : $validToFallback;
+
         return [
             'ih09_description' => $this->getValue($line, 'ih09_description'),
             'dimensions_alt' => $this->getValue($line, 'dimensions_alt'),
             'gross_weight' => $this->getGrossWeight($line),
             'plant' => $this->getPlant($line),
             'wkctr' => $this->getWorkCenter($line),
-            'valid_from_raw' => $this->getValue($line, 'valid_from_raw'),
-            'valid_to_raw' => $this->getValue($line, 'valid_to_raw'),
+            'valid_from_raw' => $validFromRaw,
+            'valid_to_raw' => $validToRaw,
         ];
     }
 
