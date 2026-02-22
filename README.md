@@ -1,8 +1,5 @@
 # SoftwareAssignment
 
-## Introduction
-This code is created with the Onion architecture, separate the layers with Application, Domain and infrastructure layer.
-
 ## Requirements
 - PHP 8.4
 - Composer
