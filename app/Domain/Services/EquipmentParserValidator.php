@@ -8,6 +8,7 @@ use App\Application\Exceptions\InvalidFileException;
 class EquipmentParserValidator
 {
     private const MINIMUM_RECORD = 50;
+    private const EXPECTED_DATA_LINE_LENGTH = 252;
 
     /**
      * @param string[] $lines
@@ -66,7 +67,7 @@ class EquipmentParserValidator
 
             foreach ($requiredHeaders as $requiredHeader) {
                 if (!str_contains($headerLine, $requiredHeader)) {
-                    throw new InvalidFileException('header incomplete');
+                    throw new InvalidFileException('Invalid header');
                 }
             }
         }
@@ -98,7 +99,7 @@ class EquipmentParserValidator
         }
 
         if (count($headerLines) < 3) {
-            throw new InvalidFileException('header incomplete');
+            throw new InvalidFileException('Invalid headers');
         }
 
         return $headerLines;
@@ -133,7 +134,19 @@ class EquipmentParserValidator
     public function validateMinimumRecord(array $equipments): void
     {
         if (count($equipments) < self::MINIMUM_RECORD) {
-            throw new IncompleteFileException('Partial export detected');
+            throw new IncompleteFileException('Total rows as less than expected');
+        }
+    }
+
+    /**
+     * @param string[] $lines
+     */
+    public function validateLineLength(array $lines): void
+    {
+        foreach ($lines as $line) {
+            if (strlen($line) !== self::EXPECTED_DATA_LINE_LENGTH) {
+                throw new InvalidFileException('Lines does not contain the expected total characters');
+            }
         }
     }
 }

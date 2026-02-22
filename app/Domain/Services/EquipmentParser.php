@@ -89,15 +89,21 @@ class EquipmentParser
 
         $lines = array_values(array_filter($lines, fn (string $line): bool => !$this->validator->isHeaderOrFooter($line)));
 
+        $this->validator->validateLineLength($lines);
+        
         return $this->parseRecordPerThreeLines($lines);
     }
 
-    private function parseRecordPerThreeLines(array $lines)
+    /**
+     * @param string[] $lines
+     * @return array<int, array<int, string>>
+     */
+    private function parseRecordPerThreeLines(array $lines): array
     {
         $records = [];
 
         for ($i = 0; $i + 2 < count($lines); $i += 3) {
-            $records[$i] = [$lines[$i], $lines[$i + 1], $lines[$i + 2]];
+            $records[] = [$lines[$i], $lines[$i + 1], $lines[$i + 2]];
         }
 
         return $records;
