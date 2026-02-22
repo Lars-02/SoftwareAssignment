@@ -4,8 +4,11 @@ namespace App\Application\Console\Commands;
 
 use App\Application\Exceptions\IncompleteFileException;
 use App\Application\Exceptions\InvalidFileException;
+use App\Domain\Enums\ImportResult;
 use App\Domain\Repositories\EquipmentRepositoryInterface;
+use App\Domain\Repositories\ImportHistoryRepositoryInterface;
 use App\Domain\Services\EquipmentParser;
+use App\Domain\Services\ImportHistory\ImportHistoryHandler;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Log;
 
@@ -28,6 +31,8 @@ class ImportEquipment extends Command
     public function __construct(
         private readonly EquipmentParser $equipmentParser,
         private readonly EquipmentRepositoryInterface $equipmentRepository,
+        private readonly ImportHistoryRepositoryInterface $importHistoryRepository,
+        private readonly ImportHistoryHandler $importHistoryHandler,
     ) {
         parent::__construct();
     }
@@ -45,6 +50,12 @@ class ImportEquipment extends Command
             return self::FAILURE;
         }
 
+        if ($this->importHistoryHandler->isImported($equipmentFilePath)) {
+            $this->info("No new equipment file");
+
+            return self::SUCCESS;
+        }
+
         try {
             $equipments = $this->equipmentParser->parseFile($equipmentFilePath);
             $this->equipmentRepository->saveBatch($equipments);
@@ -53,6 +64,12 @@ class ImportEquipment extends Command
                 'file' => $equipmentFilePath,
                 'error' => $e->getMessage(),
             ]);
+
+            $this->importHistoryRepository->create(
+                basename($equipmentFilePath),
+                ImportResult::INVALID,
+                $e->getMessage(),
+            );
 
             $this->error($e->getMessage());
 
@@ -63,6 +80,11 @@ class ImportEquipment extends Command
                 'error' => $e->getMessage(),
             ]);
 
+            $this->importHistoryRepository->create(
+                basename($equipmentFilePath),
+                ImportResult::INCOMPLETE,
+                $e->getMessage(),
+            );
             $this->warn($e->getMessage());
 
             return self::SUCCESS;
@@ -72,6 +94,11 @@ class ImportEquipment extends Command
                 'error' => $e->getMessage(),
                 'trace' => $e->getTraceAsString(),
             ]);
+
+            $this->importHistoryRepository->create(
+                basename($equipmentFilePath),
+                ImportResult::FAILED,
+            );
             
             $this->error('Unexpected import error ' . $e->getMessage());
             $this->error($e->getTraceAsString());
@@ -79,6 +106,7 @@ class ImportEquipment extends Command
             return self::FAILURE;
         }
 
+        $this->importHistoryHandler->markAsImported($equipmentFilePath);
         $this->info(count($equipments) . " rows has been imported");
 
         return self::SUCCESS;
