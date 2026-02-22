@@ -320,9 +320,23 @@ class EquipmentParser
         $grossWeightBlock = $this->getValue($line, 'gross_weight_block');
 
         // Split by whitespace to remove unit, e.g. "8.000,00 KG".
-        $parts = preg_split('/\s+/', trim((string) $grossWeightBlock)) ?: [];
+        $parts        = preg_split('/\s+/', trim((string) $grossWeightBlock)) ?: [];
+        $numericToken = $parts[0] ?? null;
 
-        return $parts[0] ?? null;
+        return $this->parseDecimal($numericToken);
+    }
+
+    private function parseDecimal(?string $value): ?float
+    {
+        if ($value === null) {
+            return null;
+        }
+
+        $normalized = str_replace('.', '', $value);
+        $normalized = str_replace(',', '.', $normalized);
+        $normalized = trim($normalized);
+
+        return is_numeric($normalized) ? (float) $normalized : null;
     }
 
     private function getWorkCenter(string $line): ?string
