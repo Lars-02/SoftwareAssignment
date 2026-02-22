@@ -145,7 +145,7 @@ class EquipmentParserValidator
     {
         foreach ($lines as $line) {
             if (strlen($line) !== self::EXPECTED_DATA_LINE_LENGTH) {
-                throw new InvalidFileException('Lines does not contain the expected total characters');
+                throw new InvalidFileException('Lines does not contain the expected total characters, this file will not be imported until the new files are uploaded');
             }
         }
     }
