@@ -56,6 +56,13 @@ php artisan serve
 php artisan import:equipment
 ```
 
+## Run Tests
+```bash
+composer test:unit
+composer test:happy
+composer test:sad
+```
+
 ## Corrupt Files Handling
 If a new equipment file is corrupt, import is rejected and no equipment rows are inserted.
 

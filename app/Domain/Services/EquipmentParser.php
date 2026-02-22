@@ -127,7 +127,7 @@ class EquipmentParser
         $line3 = $this->parseThirdLineData($line3);
 
         if (is_null($line1['equipment'])) {
-            throw new InvalidFileException("Missing equipment id at record");
+            throw new InvalidFileException("Missing equipment value");
         }
 
         $createdOn    = $this->parseDateForTimestamp($line3['created_on_raw']);
