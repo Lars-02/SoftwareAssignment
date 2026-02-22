@@ -60,56 +60,74 @@ class ImportEquipment extends Command
             $equipments = $this->equipmentParser->parseFile($equipmentFilePath);
             $this->equipmentRepository->saveBatch($equipments);
         } catch (InvalidFileException $e) {
-            Log::error('Invalid file found', [
-                'file' => $equipmentFilePath,
-                'error' => $e->getMessage(),
-            ]);
-
-            $this->importHistoryRepository->create(
-                basename($equipmentFilePath),
-                ImportResult::INVALID,
-                $e->getMessage(),
-            );
-
-            $this->error($e->getMessage());
-
-            return self::FAILURE;
+            return $this->handleInvalidFile($equipmentFilePath, $e);
         } catch (IncompleteFileException $e) {
-            Log::error('Incomplete file found', [
-                'file' => $equipmentFilePath,
-                'error' => $e->getMessage(),
-            ]);
-
-            $this->importHistoryRepository->create(
-                basename($equipmentFilePath),
-                ImportResult::INCOMPLETE,
-                $e->getMessage(),
-            );
-            $this->warn($e->getMessage());
-
-            return self::SUCCESS;
+            return $this->handleIncompleteFile($equipmentFilePath, $e);
         } catch (\Throwable $e) {
-            Log::error('Something went wrong', [
-                'file' => $equipmentFilePath,
-                'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString(),
-            ]);
-
-            $this->importHistoryRepository->create(
-                basename($equipmentFilePath),
-                ImportResult::FAILED,
-            );
-            
-            $this->error('Unexpected import error ' . $e->getMessage());
-            $this->error($e->getTraceAsString());
-
-            return self::FAILURE;
+            return $this->handleUnexpectedError($equipmentFilePath, $e);
         }
 
         $this->importHistoryHandler->markAsImported($equipmentFilePath);
         $this->info(count($equipments) . " rows has been imported");
 
         return self::SUCCESS;
+    }
+
+    private function handleInvalidFile(string $equipmentFilePath, InvalidFileException $e): int
+    {
+        $this->logImportFailure('Invalid file found', $equipmentFilePath, $e->getMessage());
+        $this->importHistoryRepository->create(
+            basename($equipmentFilePath),
+            ImportResult::INVALID,
+            $e->getMessage(),
+        );
+        $this->error($e->getMessage());
+
+        return self::FAILURE;
+    }
+
+    private function handleIncompleteFile(string $equipmentFilePath, IncompleteFileException $e): int
+    {
+        $this->logImportFailure('Incomplete file found', $equipmentFilePath, $e->getMessage());
+        $this->importHistoryRepository->create(
+            basename($equipmentFilePath),
+            ImportResult::INCOMPLETE,
+            $e->getMessage(),
+        );
+        $this->warn($e->getMessage());
+
+        return self::SUCCESS;
+    }
+
+    private function handleUnexpectedError(string $equipmentFilePath, \Throwable $e): int
+    {
+        $this->logImportFailure('Something went wrong', $equipmentFilePath, $e->getMessage(), $e);
+        $this->importHistoryRepository->create(
+            basename($equipmentFilePath),
+            ImportResult::FAILED,
+        );
+        $this->error('Unexpected import error ' . $e->getMessage());
+        $this->error($e->getTraceAsString());
+
+        return self::FAILURE;
+    }
+
+    private function logImportFailure(
+        string $message,
+        string $equipmentFilePath,
+        string $errorMessage,
+        ?\Throwable $e = null,
+    ): void {
+        $context = [
+            'file' => $equipmentFilePath,
+            'error' => $errorMessage,
+        ];
+
+        if ($e !== null) {
+            $context['trace'] = $e->getTraceAsString();
+        }
+
+        Log::error($message, $context);
     }
 
     public function getLatestEquipmentFileFullPath(): ?string
