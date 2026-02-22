@@ -2,12 +2,16 @@
 
 namespace App\Domain\Services;
 
+use App\Application\Exceptions\InvalidFileException;
 use App\Domain\Models\Equipment;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\File;
 
 class EquipmentParser
 {
+    private const OUTER_PIPE_CHARACTER_MASK = '|';
+    private const TRAILING_WHITESPACE_CHARACTER_MASK = "\t \n\r\0\x0B";
+
     /**
      * @var array<string, array{0: int, 1: int}> 0 = start, 1 = length
      */
@@ -49,9 +53,13 @@ class EquipmentParser
      */
     public function parseFile(string $equipmentFilePath): array
     {
-        $content = File::get($equipmentFilePath);
+        try {
+            $content = File::get($equipmentFilePath);
+        } catch (\Throwable $e) {
+            throw new InvalidFileException("Unable to read equipment file: {$equipmentFilePath}");
+        }
 
-        $lines      = $this->clean($content);
+        $lines      = $this->removeNewLine($content);
         $records    = $this->getRecordPerThreeLines($lines);
         $equipments = [];
 
@@ -62,7 +70,7 @@ class EquipmentParser
         return $equipments;
     }
 
-    private function clean(string $content): array
+    private function removeNewLine(string $content): array
     {
         return preg_split('/\r\n|\r|\n/', $content) ?: [];
     }
@@ -73,7 +81,13 @@ class EquipmentParser
      */
     private function getRecordPerThreeLines(array $lines): array
     {
-        $lines   = array_values(array_filter($lines, fn (string $line): bool => !$this->validator->isHeaderOrFooter($line)));
+        $lines = array_values(array_filter($lines, fn (string $line): bool => !$this->validator->isHeaderOrFooter($line)));
+
+        return $this->parseRecordPerThreeLines($lines);
+    }
+
+    private function parseRecordPerThreeLines(array $lines)
+    {
         $records = [];
 
         for ($i = 0; $i + 2 < count($lines); $i += 3) {
@@ -88,15 +102,27 @@ class EquipmentParser
      */
     private function parseRecord(array $lines): Equipment
     {
-        $line1 = $this->parseFirstLineData($lines[0]);
-        $line2 = $this->parseSecondLineData($lines[1]);
-        $line3 = $this->parseThirdLineData($lines[2]);
+        if (count($lines) !== 3) {
+            throw new InvalidFileException("incorrect row: expected 3 lines");
+        }
 
-        $createdOn = $this->parseDateForTimestamp($line3['created_on_raw']);
-        $createdBy = $line3['created_by'];
-        $changedOn = $this->parseDateForTimestamp($line3['changed_on_raw']);
+        $line1 = $this->cleanDelimitedLine($lines[0]);
+        $line2 = $this->cleanDelimitedLine($lines[1]);
+        $line3 = $this->cleanDelimitedLine($lines[2]);
+
+        $line1 = $this->parseFirstLineData($line1);
+        $line2 = $this->parseSecondLineData($line2);
+        $line3 = $this->parseThirdLineData($line3);
+
+        if (is_null($line1['equipment'])) {
+            throw new InvalidFileException("Missing equipment id at record");
+        }
+
+        $createdOn    = $this->parseDateForTimestamp($line3['created_on_raw']);
+        $createdBy    = $line3['created_by'];
+        $changedOn    = $this->parseDateForTimestamp($line3['changed_on_raw']);
         $systemStatus = $line1['system_status'] ?: 'UNKNOWN';
-        $userStatus = $line1['user_status'] ?: 'UNKNOWN';
+        $userStatus   = $line1['user_status'] ?: 'UNKNOWN';
 
         return new Equipment([
             'Equipment' => $line1['equipment'],
@@ -229,6 +255,13 @@ class EquipmentParser
         ];
     }
 
+    private function cleanDelimitedLine(string $line): string
+    {
+        $withoutPipes = trim($line, self::OUTER_PIPE_CHARACTER_MASK);
+
+        return rtrim($withoutPipes, self::TRAILING_WHITESPACE_CHARACTER_MASK);
+    }
+
     private function getValue(string $line, string $key): ?string
     {
         if (!isset($this->characterPositions[$key])) {
@@ -296,7 +329,7 @@ class EquipmentParser
     {
         $workCenterBlock = $this->getValue($line, 'wkctr_block');
 
-        // Split by whitespace and keep first work-center, bcs there are like
+        // Split by whitespace and keep first work-center, bcs there are like 
         // PPAC, BOTM, MF and the other has 9 character except these
         $parts = preg_split('/\s+/', trim((string) $workCenterBlock)) ?: [];
 
