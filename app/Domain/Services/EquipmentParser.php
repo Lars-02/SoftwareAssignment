@@ -123,6 +123,7 @@ class EquipmentParser
         $changedOn    = $this->parseDateForTimestamp($line3['changed_on_raw']);
         $systemStatus = $line1['system_status'] ?: 'UNKNOWN';
         $userStatus   = $line1['user_status'] ?: 'UNKNOWN';
+        $stockType    = $this->deriveStockType($line2['valid_from_raw'], $line2['valid_to_raw']);
 
         return new Equipment([
             'Equipment' => $line1['equipment'],
@@ -161,7 +162,7 @@ class EquipmentParser
             'return_time' => null,
             'workcenter' => $line2['wkctr'] ?? 'UNKNOWN',
             'material_status' => null,
-            'StockType' => null,
+            'StockType' => $stockType,
             'SpecialStock' => null,
             'CreatedOn' => $createdOn,
             'CreatedBy' => $createdBy ?? 'SYSTEM',
@@ -348,6 +349,24 @@ class EquipmentParser
         $parts = preg_split('/\s+/', trim((string) $workCenterBlock)) ?: [];
 
         return $parts[0] ?? null;
+    }
+
+    private function deriveStockType(?string $validFromRaw, ?string $validToRaw): ?string
+    {
+        $validFrom = $this->parseDateForTimestamp($validFromRaw);
+        $validTo   = $this->parseDateForTimestamp($validToRaw);
+        $today     = Carbon::today();
+
+        if ($validFrom === null || $validTo === null) {
+            return 'UNAVAILABLE';
+        }
+
+        $validFromDate = Carbon::parse($validFrom);
+        $validToDate = Carbon::parse($validTo);
+
+        return $today->betweenIncluded($validFromDate, $validToDate)
+            ? 'AVAILABLE'
+            : 'UNAVAILABLE';
     }
 
     private function getPlant(string $line): ?string
