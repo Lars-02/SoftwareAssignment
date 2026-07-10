@@ -12,8 +12,8 @@ Imports an SAP equipment export into a database on a daily schedule, and shows t
 
 1. `cp .env.example .env`
 2. Fill in `DB_PASSWORD` and `DB_ROOT_PASSWORD` in `.env` (any values — they provision the MariaDB container; the app itself only ever connects as `DB_USERNAME`, never as root)
-3. `docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d --build`
-4. `docker compose exec php php artisan key:generate`
+3. `docker compose -f docker-compose.yml -f docker-compose.dev.yml run --rm php php artisan key:generate`
+4. `docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d --build`
 5. `docker compose exec php php artisan migrate`
 6. Visit [http://localhost:8000](http://localhost:8000)
 
@@ -50,8 +50,7 @@ All documented in `.env.example`. Notable ones:
 ## Searching
 
 - Search box on the equipments page filters by Equipment, Material, Description, and Room
-- Validated with a Laravel Form Request (`nullable|string|max:191`)
-- Search and pagination both run over `fetch()` without a full page reload; the plain `<form>` still works with JavaScript disabled
+- Validated with a Laravel Form Request
 
 ## Corrupt file detection
 
@@ -69,7 +68,7 @@ On failure, `equipments:import` prints the error and exits non-zero.
 ## Partial file detection
 
 - Every import is a full replace, so a new file is expected to have at least as many rows as currently in the table
-- If it has fewer, some equipment is missing from the export — the file is rejected and existing data is kept
+- If it has fewer, some equipment is missing from the export, the file is rejected and existing data is kept
 - The very first import into an empty table is always allowed, since there's nothing to compare against
 
 ## Running tests
@@ -78,7 +77,7 @@ On failure, `equipments:import` prints the error and exits non-zero.
 docker compose exec php ./vendor/bin/phpunit
 ```
 
-- The `php`/`scheduler` images are built without dev dependencies (`--no-dev`), so PHPUnit isn't in them by default
+- The `php`/`scheduler` images are built without dev dependencies, so PHPUnit isn't in them by default
 - To install dev dependencies once into the shared `vendor` volume:
 
   ```bash
@@ -89,4 +88,3 @@ docker compose exec php ./vendor/bin/phpunit
 ## Notable deviations
 
 - `database/migrations/*_create_equipments_table.php` matches the provided `CREATE TABLE` statement exactly, including the `'0000-00-00'` defaults. Laravel's default strict mode adds `NO_ZERO_DATE`/`NO_ZERO_IN_DATE` to every connection, which would make those defaults unusable — `config/database.php` overrides the connection's `modes` to drop just those two.
-- Not committed, per the assignment: imported equipment files and the assignment brief itself.
