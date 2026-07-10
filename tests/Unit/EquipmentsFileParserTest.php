@@ -160,12 +160,19 @@ class EquipmentsFileParserTest extends TestCase
         $border = '|'.str_repeat('-', 250).'|';
         $footer = str_repeat('-', 252);
         $notABorder = str_pad('not a border', 252);
+        $notAFooter = str_pad('not a footer', 252);
         $headerText = [
+            '|'.str_pad('Material Equipment Room', 250).'|',
+            '|'.str_pad('Gross Weight Plnt', 250).'|',
+            '|'.str_pad('Created On Created By Chngd On Changed by', 250).'|',
+        ];
+        $invalidHeaderText = [
             '|'.str_pad('header 1', 250).'|',
             '|'.str_pad('header 2', 250).'|',
             '|'.str_pad('header 3', 250).'|',
         ];
         $goodRecordLine = '|'.str_pad('x', 250).'|';
+        $wrongWidthLine = '|'.str_pad('too short', 100).'|';
 
         return [
             'missing top border' => [
@@ -175,13 +182,21 @@ class EquipmentsFileParserTest extends TestCase
                 implode("\n", [$border, ...$headerText, $notABorder, $goodRecordLine, $goodRecordLine, $goodRecordLine, $footer]),
             ],
             'missing footer' => [
-                implode("\n", [$border, ...$headerText, $border, $goodRecordLine, $goodRecordLine, $goodRecordLine, 'not a footer']),
+                implode("\n", [$border, ...$headerText, $border, $goodRecordLine, $goodRecordLine, $goodRecordLine, $notAFooter]),
             ],
             'body not a multiple of three' => [
                 implode("\n", [$border, ...$headerText, $border, $goodRecordLine, $goodRecordLine, $footer]),
             ],
             'too short to contain a header and body' => [
                 implode("\n", [$border, $border]),
+            ],
+            'empty file' => [''],
+            'whitespace-only file' => ["  \n\n  "],
+            'header labels do not match the expected report' => [
+                implode("\n", [$border, ...$invalidHeaderText, $border, $goodRecordLine, $goodRecordLine, $goodRecordLine, $footer]),
+            ],
+            'a line is not the expected width' => [
+                implode("\n", [$border, ...$headerText, $border, $wrongWidthLine, $goodRecordLine, $goodRecordLine, $footer]),
             ],
         ];
     }

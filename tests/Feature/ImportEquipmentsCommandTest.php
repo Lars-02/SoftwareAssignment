@@ -112,4 +112,48 @@ class ImportEquipmentsCommandTest extends TestCase
 
         $this->assertSame(1, Equipment::count());
     }
+
+    public function test_it_rejects_a_file_with_fewer_rows_than_current_data(): void
+    {
+        Equipment::factory()->count(3)->create();
+
+        $content = $this->equipmentsFile($this->equipmentsRecords([
+            [['Material' => '1111.111.11111-FET', 'Equipment' => '3000000001'], [], []],
+            [['Material' => '2222.222.22222-FET', 'Equipment' => '3000000002'], [], []],
+        ]));
+        file_put_contents($this->importDir.'/EQUIPMENTS_20260101000000.txt', $content);
+
+        $this->artisan('equipments:import')->assertFailed();
+
+        $this->assertSame(3, Equipment::count());
+        $this->assertNull(Equipment::find('3000000001'));
+    }
+
+    public function test_it_allows_a_file_with_the_same_row_count_as_current_data(): void
+    {
+        Equipment::factory()->count(2)->create();
+
+        $content = $this->equipmentsFile($this->equipmentsRecords([
+            [['Material' => '1111.111.11111-FET', 'Equipment' => '3000000001'], [], []],
+            [['Material' => '2222.222.22222-FET', 'Equipment' => '3000000002'], [], []],
+        ]));
+        file_put_contents($this->importDir.'/EQUIPMENTS_20260101000000.txt', $content);
+
+        $this->artisan('equipments:import')->assertSuccessful();
+
+        $this->assertSame(2, Equipment::count());
+        $this->assertNotNull(Equipment::find('3000000001'));
+    }
+
+    public function test_it_allows_the_first_import_into_an_empty_table_regardless_of_size(): void
+    {
+        $content = $this->equipmentsFile($this->equipmentsRecords([
+            [['Material' => '1111.111.11111-FET', 'Equipment' => '3000000001'], [], []],
+        ]));
+        file_put_contents($this->importDir.'/EQUIPMENTS_20260101000000.txt', $content);
+
+        $this->artisan('equipments:import')->assertSuccessful();
+
+        $this->assertSame(1, Equipment::count());
+    }
 }
