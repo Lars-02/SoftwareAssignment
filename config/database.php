@@ -77,6 +77,14 @@ return [
             'prefix' => '',
             'prefix_indexes' => true,
             'strict' => true,
+            // The Equipments table intentionally keeps the spec's '0000-00-00' date
+            // defaults, so NO_ZERO_DATE/NO_ZERO_IN_DATE are dropped from Laravel's
+            // usual strict mode list to allow writing them.
+            'modes' => [
+                'STRICT_TRANS_TABLES',
+                'ERROR_FOR_DIVISION_BY_ZERO',
+                'NO_ENGINE_SUBSTITUTION',
+            ],
             'engine' => null,
             'options' => extension_loaded('pdo_mysql') ? array_filter([
                 (PHP_VERSION_ID >= 80500 ? \Pdo\Mysql::ATTR_SSL_CA : \PDO::MYSQL_ATTR_SSL_CA) => env('MYSQL_ATTR_SSL_CA'),
