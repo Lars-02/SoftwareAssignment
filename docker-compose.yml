@@ -87,6 +87,17 @@ services:
             timeout: 10s
             retries: 5
 
+    node:
+        container_name: asml-assignment-node
+        image: node:22-alpine
+        working_dir: /usr/src/app
+        command: sh -c "npm ci && npm run build"
+        volumes:
+            - .:/usr/src/app
+        networks:
+            - app_network
+        user: "1000:1000"
+
     scheduler:
         container_name: asml-assignment-scheduler
         build:
