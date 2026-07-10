@@ -16,7 +16,7 @@ trait BuildsEquipmentsFixtures
         $lines = [
             $this->borderLine(),
             $this->paddedLine('Material  Material Description  Size/dimensions  Equipment  Stat Stat Location  Room  SLoc  Superord.Equipment ManufactSerialNumber  Serial Number'),
-            $this->paddedLine('Description of Technical Object  Size/dimensions  Gross Weight'),
+            $this->paddedLine('Description of Technical Object  Size/dimensions  Gross Weight  Uni MS Plnt Plnt Cost Ctr'),
             $this->paddedLine('Work ctr  Net Weight  Old material no.  MS PP S Created On Created By  Chngd On  Changed by'),
             $this->borderLine(),
             ...$bodyLines,

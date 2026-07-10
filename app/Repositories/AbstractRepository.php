@@ -26,6 +26,11 @@ abstract class AbstractRepository
         return $this->query()->get();
     }
 
+    public function count(): int
+    {
+        return $this->query()->count();
+    }
+
     /** @return Collection<int, Model> */
     public function allWith(array $relations = []): Collection
     {

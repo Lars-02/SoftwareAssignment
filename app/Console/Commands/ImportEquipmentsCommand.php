@@ -42,6 +42,18 @@ class ImportEquipmentsCommand extends Command
             return self::FAILURE;
         }
 
+        $currentCount = $this->repository->count();
+        $newCount = count($rows);
+
+        if ($currentCount > 0 && $newCount < $currentCount) {
+            $this->warn(
+                "Equipments file has only {$newCount} rows, fewer than the current {$currentCount}. ".
+                'Skipping import and keeping existing data.'
+            );
+
+            return self::FAILURE;
+        }
+
         $this->repository->replaceAll($rows);
 
         $this->comment('Imported '.count($rows)." equipments from {$path}.");

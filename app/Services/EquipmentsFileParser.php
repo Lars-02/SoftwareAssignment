@@ -37,6 +37,10 @@ class EquipmentsFileParser
      */
     public function parse(string $content): array
     {
+        if (empty(trim($content))) {
+            throw new CorruptEquipmentsFileException('Equipments file is empty.');
+        }
+
         $lines = explode("\n", rtrim($content, "\n"));
 
         $this->validateFrame($lines);
@@ -67,9 +71,19 @@ class EquipmentsFileParser
             throw new CorruptEquipmentsFileException('Equipments file is too short to contain a valid header and body.');
         }
 
+        foreach ($lines as $number => $line) {
+            if (strlen($line) !== self::LINE_WIDTH) {
+                throw new CorruptEquipmentsFileException(
+                    'Equipments file line '.($number + 1).' is not '.self::LINE_WIDTH.' characters wide.'
+                );
+            }
+        }
+
         if (!$this->isBorderLine($lines[0]) || !$this->isBorderLine($lines[4])) {
             throw new CorruptEquipmentsFileException('Equipments file header borders are missing or malformed.');
         }
+
+        $this->validateHeaderLabels($lines[1], $lines[2], $lines[3]);
 
         $footer = end($lines);
 
@@ -81,6 +95,27 @@ class EquipmentsFileParser
 
         if ($bodyCount <= 0 || $bodyCount % 3 !== 0) {
             throw new CorruptEquipmentsFileException('Equipments file body line count is not a multiple of 3.');
+        }
+    }
+
+    /**
+     * Sanity-checks that this is the expected SAP export layout, not some
+     * other fixed-width file that happens to share the same border style.
+     */
+    private function validateHeaderLabels(string $line1, string $line2, string $line3): void
+    {
+        $expected = [
+            $line1 => ['Material', 'Equipment', 'Room'],
+            $line2 => ['Gross Weight', 'Plnt'],
+            $line3 => ['Created On', 'Created By', 'Chngd On', 'Changed by'],
+        ];
+
+        foreach ($expected as $line => $labels) {
+            foreach ($labels as $label) {
+                if (!str_contains($line, $label)) {
+                    throw new CorruptEquipmentsFileException("Equipments file header is missing the expected \"{$label}\" column.");
+                }
+            }
         }
     }
 
@@ -255,6 +290,10 @@ class EquipmentsFileParser
     private function toDate(string $ddMmYyyy): string
     {
         [$day, $month, $year] = explode('.', $ddMmYyyy);
+
+        if (!checkdate((int) $month, (int) $day, (int) $year)) {
+            throw new CorruptEquipmentsFileException("Equipments file contains an invalid date \"{$ddMmYyyy}\".");
+        }
 
         return "{$year}-{$month}-{$day}";
     }
