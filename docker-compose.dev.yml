@@ -1,0 +1,31 @@
+services:
+    php:
+        depends_on:
+            db:
+                condition: service_healthy
+        healthcheck:
+            test: ["CMD", "php-fpm", "-t"]
+            interval: 30s
+            timeout: 5s
+            retries: 3
+            start_period: 30s
+
+    nginx:
+        depends_on:
+            php:
+                condition: service_healthy
+
+    db:
+        healthcheck:
+            test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+            interval: 30s
+            timeout: 5s
+            retries: 5
+            start_period: 60s
+
+    scheduler:
+        depends_on:
+            db:
+                condition: service_healthy
+            php:
+                condition: service_healthy
