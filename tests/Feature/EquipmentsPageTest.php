@@ -77,4 +77,26 @@ class EquipmentsPageTest extends TestCase
         $response->assertOk();
         $response->assertSessionHasNoErrors();
     }
+
+    public function test_ajax_requests_receive_only_the_results_partial(): void
+    {
+        Equipment::factory()->create(['Equipment' => '4000000001']);
+
+        $response = $this->get(route('equipments.index'), ['X-Requested-With' => 'XMLHttpRequest']);
+
+        $response->assertOk();
+        $response->assertSee('4000000001');
+        $response->assertDontSee('<html', false);
+    }
+
+    public function test_ajax_validation_failures_return_json_errors(): void
+    {
+        $response = $this->get(
+            route('equipments.index', ['search' => str_repeat('a', 192)]),
+            ['X-Requested-With' => 'XMLHttpRequest', 'Accept' => 'application/json, text/html'],
+        );
+
+        $response->assertStatus(422);
+        $response->assertJsonValidationErrors('search');
+    }
 }
