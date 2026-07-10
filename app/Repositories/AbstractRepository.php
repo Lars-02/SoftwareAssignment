@@ -41,7 +41,7 @@ abstract class AbstractRepository
     /** @return Collection<int, Model> */
     public function allWhereLike(string $column, mixed $value): Collection
     {
-        return $this->query()->where($column, 'like', '%'.$value.'%')->get();
+        return $this->query()->where($column, 'like', "%{$value}%")->get();
     }
 
     /** @return Collection<int, Model> */
