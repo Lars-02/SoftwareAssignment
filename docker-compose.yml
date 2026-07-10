@@ -18,7 +18,7 @@ services:
             - .env
         depends_on:
             db:
-                condition: service_started
+                condition: service_healthy
         networks:
             - app_network
         healthcheck:
@@ -41,7 +41,7 @@ services:
             - "8000:80"
         depends_on:
             php:
-                condition: service_started
+                condition: service_healthy
         environment:
             NGINX_FPM_HOST: php
             NGINX_ROOT: /usr/src/app/public
@@ -115,9 +115,9 @@ services:
             - .env
         depends_on:
             db:
-                condition: service_started
+                condition: service_healthy
             php:
-                condition: service_started
+                condition: service_healthy
         networks:
             - app_network
         user: "1000:1000"
