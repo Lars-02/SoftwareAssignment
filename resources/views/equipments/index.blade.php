@@ -10,7 +10,22 @@
     <div class="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
         <h1 class="text-2xl font-semibold">Equipments</h1>
 
-        <div class="mt-6 overflow-x-auto rounded-lg border border-gray-200 bg-white shadow-sm">
+        <form method="GET" action="{{ route('equipments.index') }}" class="mt-6">
+            <label for="search" class="sr-only">Search equipment</label>
+            <input
+                type="text"
+                name="search"
+                id="search"
+                value="{{ old('search', $search) }}"
+                placeholder="Search by equipment, material, description or room"
+                class="w-full max-w-md rounded-md border border-gray-300 px-3 py-2 text-sm shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+            >
+            @error('search')
+                <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+            @enderror
+        </form>
+
+        <div class="mt-4 overflow-x-auto rounded-lg border border-gray-200 bg-white shadow-sm">
             <table class="min-w-full divide-y divide-gray-200">
                 <thead class="bg-gray-50">
                     <tr>
@@ -37,7 +52,11 @@
                     @empty
                         <tr>
                             <td colspan="7" class="px-4 py-10 text-center text-sm text-gray-500">
-                                No equipments imported yet.
+                                @if ($search)
+                                    No equipments match "{{ $search }}".
+                                @else
+                                    No equipments imported yet.
+                                @endif
                             </td>
                         </tr>
                     @endforelse
