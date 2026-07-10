@@ -20,9 +20,15 @@ class Index extends Controller
     {
         $search = $request->search();
 
-        return view('equipments.index', [
+        $data = [
             'equipments' => $this->equipments->searchPaginated($search, 15)->withQueryString(),
             'search' => $search,
-        ]);
+        ];
+
+        if ($request->ajax()) {
+            return view('equipments.partials.table', $data);
+        }
+
+        return view('equipments.index', $data);
     }
 }
