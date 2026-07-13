@@ -16,7 +16,7 @@
 
         <div class="flex-1">
             <label for="search" class="sr-only">Search</label>
-            <input type="text" name="search" id="search" value="{{ request('search') }}"
+            <input type="text" name="search" id="search" value="{{ request('search') }}" maxlength="191"
                    placeholder="Search by equipment, material, description or room..."
                    class="w-full rounded-md border-gray-300 shadow-sm text-sm px-3 py-2 border">
         </div>
@@ -48,26 +48,50 @@
         fetch(url, {
             headers: { 'X-Requested-With': 'XMLHttpRequest' },
         })
-            .then(response => response.text())
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(`Search failed (${response.status})`);
+                }
+                return response.text();
+            })
             .then(html => {
                 resultsContainer.innerHTML = html;
                 window.history.pushState({}, '', url);
+            })
+            .catch(() => {
+                // Validation error or network failure: keep the current results.
             });
+    }
+
+    function searchUrl() {
+        const params = new URLSearchParams({ search: searchInput.value });
+        return `{{ route('equipments.index') }}?${params.toString()}`;
     }
 
     searchInput.addEventListener('input', function () {
         clearTimeout(debounceTimer);
-        debounceTimer = setTimeout(() => {
-            const params = new URLSearchParams({ search: searchInput.value });
-            performSearch(`{{ route('equipments.index') }}?${params.toString()}`);
-        }, 300);
+        debounceTimer = setTimeout(() => performSearch(searchUrl()), 300);
     });
 
     document.querySelector('form').addEventListener('submit', function (e) {
         e.preventDefault();
-        const params = new URLSearchParams({ search: searchInput.value });
-        performSearch(`{{ route('equipments.index') }}?${params.toString()}`);
+        performSearch(searchUrl());
     });
+
+    // Keep pagination on the AJAX path too: intercept clicks on the
+    // pagination links that arrive inside the swapped-in results.
+    resultsContainer.addEventListener('click', function (e) {
+        const link = e.target.closest('a[href*="page="]');
+        if (!link) {
+            return;
+        }
+        e.preventDefault();
+        performSearch(link.href);
+    });
+
+    // Back/forward buttons: the URL was changed via pushState, so reload
+    // to render the state that URL represents.
+    window.addEventListener('popstate', () => window.location.reload());
 </script>
 
 </body>
