@@ -1,7 +1,6 @@
 <?php
 
+use App\Http\Controllers\Equipments\Index;
 use Illuminate\Support\Facades\Route;
 
-Route::get('/', function () {
-    return view('welcome');
-});
+Route::get('/', Index::class)->name('equipments.index');

@@ -1,0 +1,132 @@
+services:
+    php:
+        container_name: asml-assignment-php
+        build:
+            context: .
+            dockerfile: ./.docker/php/Dockerfile
+        restart: unless-stopped
+        working_dir: /usr/src/app
+        expose:
+            - 9000
+        volumes:
+            - .:/usr/src/app
+            - vendor-data:/usr/src/app/vendor
+            - bootstrap-cache-data:/usr/src/app/bootstrap/cache
+            - ./public:/usr/src/app/public
+            - ./storage:/usr/src/app/storage
+        env_file:
+            - .env
+        depends_on:
+            db:
+                condition: service_healthy
+        networks:
+            - app_network
+        healthcheck:
+            test: ["CMD-SHELL", "php artisan --version || exit 1"]
+            interval: 30s
+            timeout: 5s
+            retries: 3
+        user: "1000:1000"
+
+    nginx:
+        container_name: asml-assignment-nginx
+        build:
+            context: .
+            dockerfile: ./.docker/nginx/Dockerfile
+        restart: unless-stopped
+        volumes:
+            - ./public:/usr/src/app/public:ro
+            - ./storage:/usr/src/app/storage:ro
+        ports:
+            - "8000:80"
+        depends_on:
+            php:
+                condition: service_healthy
+        environment:
+            NGINX_FPM_HOST: php
+            NGINX_ROOT: /usr/src/app/public
+        networks:
+            - app_network
+        read_only: true
+        tmpfs:
+            - /tmp
+            - /var/cache/nginx
+            - /var/run
+            - /etc/nginx/conf.d
+        cap_drop:
+            - ALL
+        cap_add:
+            - CHOWN
+            - SETGID
+            - SETUID
+            - NET_BIND_SERVICE
+        healthcheck:
+            test: ["CMD", "curl", "-f", "http://localhost"]
+            interval: 30s
+            timeout: 10s
+            retries: 3
+
+    db:
+        container_name: asml-assignment-db
+        image: mariadb:11.4
+        restart: unless-stopped
+        volumes:
+            - db-data:/var/lib/mysql
+        ports:
+            - "3306:3306"
+        environment:
+            MARIADB_DATABASE: ${DB_DATABASE}
+            MARIADB_USER: ${DB_USERNAME}
+            MARIADB_PASSWORD: ${DB_PASSWORD}
+            MARIADB_ROOT_PASSWORD: ${DB_ROOT_PASSWORD}
+        networks:
+            - app_network
+        healthcheck:
+            test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+            interval: 30s
+            timeout: 10s
+            retries: 5
+
+    node:
+        container_name: asml-assignment-node
+        image: node:22-alpine
+        working_dir: /usr/src/app
+        command: sh -c "npm ci && npm run build"
+        volumes:
+            - .:/usr/src/app
+        networks:
+            - app_network
+        user: "1000:1000"
+
+    scheduler:
+        container_name: asml-assignment-scheduler
+        build:
+            context: .
+            dockerfile: ./.docker/php/Dockerfile
+        restart: unless-stopped
+        working_dir: /usr/src/app
+        command: php artisan schedule:work
+        volumes:
+            - .:/usr/src/app
+            - vendor-data:/usr/src/app/vendor
+            - bootstrap-cache-data:/usr/src/app/bootstrap/cache
+            - ./storage:/usr/src/app/storage
+        env_file:
+            - .env
+        depends_on:
+            db:
+                condition: service_healthy
+            php:
+                condition: service_healthy
+        networks:
+            - app_network
+        user: "1000:1000"
+
+networks:
+    app_network:
+        driver: bridge
+
+volumes:
+    db-data:
+    vendor-data:
+    bootstrap-cache-data:
